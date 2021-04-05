@@ -1,8 +1,6 @@
 import networkx as nx
 from tkinter import *
-import matplotlib.animation as animation
 import matplotlib.pyplot as plt
-import random
 import tkinter as tk
 from matplotlib import animation
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -10,28 +8,23 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #                                         N O T E S                                                #
 ####################################################################################################
 #input from user should be entered in a way such that smaller numbers come first
+#TO_DO : when adding cycles code repeat nodes
+'''
+1 2 3 4
+4 5
+6 7
+8 9
+10 11
+12 13
+14 15
+16 17
+18
+19 20
+21 22
+23 24
+'''
 #####################################################################################################
-#                                    START OF GRAPHING                                              #
-####################################################################################################
-class GraphVisualization:
-
-    def __init__(self):
-        self._edgeList = []
-
-    def addEdge(self, node, adj):
-        temp_edge = [node, adj]
-        self._edgeList.append(temp_edge)
-
-    def visualize(self):
-        G = nx.Graph()
-        G.add_edges_from(self._edgeList)
-        nx.draw_networkx(G)
-        plt.show()
-
-
-
-#####################################################################################################
-#                                    END OF GRAPHING                                                #
+#                                        START OF DFS                                              #
 ####################################################################################################
 class DFS:
     def __init__(self,user_input):
@@ -63,7 +56,9 @@ class DFS:
 
     def dfs(self,node):
         self._visited[node] = 'ture'
-        self._l.append(node)
+        #or you may use a stack
+        if node not in self._l :
+            self._l.append(node)
         print(node)
         for x in self._adj[node]:
                 self.dfs(int(x))
@@ -74,26 +69,11 @@ class DFS:
         # l.remove(0)
         print(self._l[frames])
         print(self._l)
-
         nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
         # Set the title
         a.set_title("Frame {}".format(frames))
         if frames == len(self._l)-1:
             self._colors = ['blue'] * self._Gr.number_of_nodes()
-
-    '''
-            def dfs(node, visited, adjList, l):
-            visited[node] = 'true';
-            l.append(node)
-            print(l)
-            print(node, end=" ")
-            for x in adjList[node]:
-                if visited[x] == 'false':
-                    dfs(x, visited, adjList, l)
-            return l
-    '''
-
-    #def draw_graph(self):
 
     def anim(self):
         fig = plt.Figure(figsize=(5, 4))
@@ -113,20 +93,15 @@ class DFS:
         #plt.show()
 
 
+
 #####################################################################################################
-#                                    START OF LOGIC                                                 #
+#                                         END OF DFS                                                #
 ####################################################################################################
-def dfs(node, visited, adjList):
-    visited[node] = 'true';
-    print(node,end=" ")
-    for x in adjList[node]:
-        if visited[x] == 'false':
-            dfs(x,visited,adjList)
 
 
 
 #####################################################################################################
-#                                    END OF LOGIC                                                   #
+#                               START OF BUTTON EVENT LISTENER                                      #
 ####################################################################################################
 def onClickRun(user_txtBox,type_var):
   input = user_txtBox.get("1.0", "end-1c").split('\n')
@@ -137,7 +112,12 @@ def onClickRun(user_txtBox,type_var):
       dfs_inst.dfs(0)
       dfs_inst.anim()
       print(dfs_inst._l)
-  print(input , 'yaAllah' , type_var)
+  print(input , 'whatever' , type_var)
+
+#####################################################################################################
+#                              END OF OF BUTTON EVENT LISTENER                                     #
+####################################################################################################
+
 #####################################################################################################
 #                                    START OF GUI                                                   #
 ####################################################################################################
@@ -167,54 +147,18 @@ btn_Run.grid(row=7, column=0, padx=5, pady=5)
 
 frm_left = tk.Frame()
 lbl_top = tk.Label(master=frm_left, text="Title", foreground="#CD5C5C")
-#txt = tk.Text(master=frm_left)
 lbl_bottom = tk.Label(master=frm_left, text="Written Results", foreground="#CD5C5C")
 lbl_top.grid(row=0, column=0, padx=5, pady=5)
-#txt.grid(row=1, column=0, padx=5, pady=5, )
 lbl_bottom.grid(row=2, column=0, padx=5, pady=5)
 
 frm_right.grid(row=0, column=1, padx=5, pady=5)
 frm_left.grid(row=0, column=0, padx=5, pady=5)
 
-'''
-f = plt.Figure(figsize=(5,4))
-a = f.add_subplot(111)
-plt.axis('off')
-
-G = nx.Graph()
-edgeList = []
-edgeList.append([0, 1])
-edgeList.append([1, 2])
-edgeList.append([2, 3])
-edgeList.append([2, 4])
-G.add_edges_from(edgeList)
-#options = {"font_size": 36, "node_size": 3000, "node_color": "white", "edgecolors": "black", "linewidths": 5, "width": 5,}
-#nx.draw_networkx(G,**options,pos=nx.spring_layout(G),ax=a)
-nx.draw_networkx(G,pos=nx.spring_layout(G),ax=a)
-
-#plt.show()
-#nx.draw_networkx(G)
-
-#.draw()
-#plt.gcf().canvas.draw()
-#plt.show()
-canvas = FigureCanvasTkAgg(f,frm_left)
-canvas.draw()
-canvas.get_tk_widget().grid(row=1, column=0)
-#plt.draw()
-'''
-
-
-
-adjList = [[1],[2],[3],[4],[]]
-visited = ['false','false','false','false','false']
-dfs(0,visited,adjList)
-print("DONE?")
 root.mainloop()
 #####################################################################################################
 #                                    END OF GUI                                                     #
 ####################################################################################################
-# plt.show()
+
 
 
 
