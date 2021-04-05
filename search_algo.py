@@ -63,7 +63,7 @@ class DFS:
         for x in self._adj[node]:
                 self.dfs(int(x))
 
-    def updata(self,frames, a):
+    def update(self,frames, a):
         a.clear()
         self._colors[self._l[frames]] = 'orange'
         # l.remove(0)
@@ -84,7 +84,7 @@ class DFS:
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
         print(len(self._l))
-        ani = animation.FuncAnimation(fig, self.updata, frames= len(self._l), interval=400, fargs={ax})
+        ani = animation.FuncAnimation(fig, self.update, frames= len(self._l), interval=400, fargs={ax})
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
