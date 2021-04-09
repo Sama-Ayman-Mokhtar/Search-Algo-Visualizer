@@ -11,18 +11,22 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #TO_DO : Print solution in result label
 #TO_DO : Di_Graph
 '''
-1 2 3 4
-4 5
-6 7
-8 9
-10 11
-12 13
-14 15
-16 17
-18
-19 20
-21 22
-23 24
+0 1 2 3 4
+1 4 5
+2 6 7
+3 8 9
+4 10 11
+5 12 13
+6 14 15
+7 16 17
+8 18
+9 19 20
+10 21 22
+11 23 24
+//another input (modify goal and initial as well)
+A B D
+B C
+D C
 '''
 
 class Node:
@@ -42,7 +46,15 @@ class DFS:
                 'D': ['C'],
                 }
         '''
-        self.graph = {0: [1, 2, 3, 4],
+        formatted_input = []
+        for x in user_input:
+            formatted_input.append(list(x.split(' ')))
+        self.graph ={}
+        for lst in formatted_input:
+            self.graph[lst[0]] = lst[1:]
+        print("TTTTTTTTT " , self.graph)
+        '''
+         self.graph = {0: [1, 2, 3, 4],
                       1: [4, 5],
                       2: [6, 7],
                       3: [8, 9],
@@ -55,6 +67,7 @@ class DFS:
                       10: [21, 22],
                       11: [23, 24],
                       }
+        '''
         self._Gr = nx.Graph()
         for key_node in self.graph:
             self._Gr.add_node(key_node)
@@ -64,6 +77,7 @@ class DFS:
                 self._Gr.add_edge(key_node, adj)
         self._l = []
         self.shortestPath = []
+        self.solution = ""
         self._colors = ['blue'] * self._Gr.number_of_nodes()
         # self._layout = nx.spring_layout(self._Gr,scale=30, k=1/math.sqrt(self._Gr.order()))
         self._layout = nx.spring_layout(self._Gr)
@@ -71,9 +85,11 @@ class DFS:
     def trace(self, goal):
         if goal.parent is None:
             print(goal.value, end=" ")
+            self.solution = self.solution + str(goal.value)
             self.shortestPath.append(goal.value)
             return
         self.trace(goal.parent)
+        self.solution = self.solution + " -> " + str(goal.value)
         self.shortestPath.append(goal.value)
         print(" -> ", goal.value, end=" ")
 
@@ -81,7 +97,7 @@ class DFS:
         visited = []
         stack = []
         stack.append(Node(init))
-        if init is goal:
+        if init == goal:
             print("Initial is goal")
             return
         while stack:
@@ -97,7 +113,8 @@ class DFS:
                 if adj not in visited:
                     print("ERE")
                     temp = Node(adj, curr_node)
-                    if adj is goal:
+                    print("sama " , adj , goal)
+                    if adj == goal:
                         self._l.append(goal)
                         self.trace(temp)
                         print()
@@ -116,7 +133,7 @@ class DFS:
             i = 0
             for node in self._Gr.nodes:
                 print(node, " ", self._l[frames])
-                if node is self._l[frames]:
+                if node == self._l[frames]:
                     break
                 i += 1
             self._colors[i] = 'orange'
@@ -130,7 +147,7 @@ class DFS:
             i = 0
             for node in self._Gr.nodes:
                 print(node, " ", self.shortestPath[frames - len(self._l)])
-                if node is self.shortestPath[frames - len(self._l)]:
+                if node == self.shortestPath[frames - len(self._l)]:
                     break
                 i += 1
             self._colors[i] = 'red'
@@ -169,11 +186,14 @@ def onClickRun(user_txtBox, type_var):
   input = user_txtBox.get("1.0", "end-1c").split('\n')
   if(type_var == 1):
       dfs_inst = DFS(input)
-      dfs_inst.dfs(0,15)
-    #  dfs_inst.dfs('A','C')
+      dfs_inst.dfs('0','15')
+      #print(input, 'whatever', '15' is '15')
+     # dfs_inst.dfs('A','C')
       dfs_inst.anim()
+      lbl_bottom['text'] = dfs_inst.solution
+      print(dfs_inst.solution)
       print(dfs_inst._l)
-  print(input , 'whatever' , type_var)
+  print(input , 'whatever' )
 
 #####################################################################################################
 #                              END OF OF BUTTON EVENT LISTENER                                     #
