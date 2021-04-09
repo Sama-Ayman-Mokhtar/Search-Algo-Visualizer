@@ -7,8 +7,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #####################################################################################################
 #                                         N O T E S                                                #
 ####################################################################################################
-#TO_DO : Take input from user and parse it
-#TO_DO : Print solution in result label
+#TO_DO : Handel cases when goals is not found and goal equals start
 #TO_DO : Di_Graph
 '''
 0 1 2 3 4
