@@ -185,9 +185,9 @@ def onClickRun(user_txtBox, type_var):
   input = user_txtBox.get("1.0", "end-1c").split('\n')
   if(type_var == 1):
       dfs_inst = DFS(input)
-      dfs_inst.dfs('0','15')
+      dfs_inst.dfs('2','15')
       #print(input, 'whatever', '15' is '15')
-     # dfs_inst.dfs('A','C')
+      #dfs_inst.dfs('A','C')
       dfs_inst.anim()
       lbl_bottom['text'] = dfs_inst.solution
       print(dfs_inst.solution)
