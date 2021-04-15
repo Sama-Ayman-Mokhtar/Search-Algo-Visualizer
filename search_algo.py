@@ -1,8 +1,10 @@
 import networkx as nx
 from tkinter import *
+from tkinter import ttk
 import matplotlib.pyplot as plt
 import tkinter as tk
 from matplotlib import animation
+from queue import Queue
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #####################################################################################################
 #                                         N O T E S                                                #
@@ -38,16 +40,16 @@ class Node:
 #                                        START OF DFS                                              #
 ####################################################################################################
 class DFS:
-    def __init__(self, user_input):
+    def __init__(self, formatted_input):
         '''
         self.graph = {'A': ['B', 'D'],
                 'B': ['C'],
                 'D': ['C'],
                 }
         '''
-        formatted_input = []
-        for x in user_input:
-            formatted_input.append(list(x.split(' ')))
+        #formatted_input = []
+        #for x in user_input:
+            #formatted_input.append(list(x.split(' ')))
         self.graph ={}
         for lst in formatted_input:
             self.graph[lst[0]] = lst[1:]
@@ -96,9 +98,10 @@ class DFS:
         visited = []
         stack = []
         stack.append(Node(init))
-        if init == goal:
+        self._l.append(init)
+        if init in goal:
             print("Initial is goal")
-            return
+            return 1
         while stack:
             curr_node = stack.pop()
             visited.append(curr_node.value)
@@ -113,22 +116,49 @@ class DFS:
                     print("ERE")
                     temp = Node(adj, curr_node)
                     print("sama " , adj , goal)
-                    if adj == goal:
-                        self._l.append(goal)
-                        self.trace(temp)
-                        print()
-                        return
+                    for x in goal:
+                        if adj == x:
+                            self._l.append(x)
+                            self.trace(temp)
+                            print()
+                            return 1
                     stack.append(temp)
             for node in stack:
                 print(node.value, end=" ")
             print()
         print("Goal not found")
-        return
+        return 0
+    
+
+    def bfs(self, initial, goal):
+        visited = []
+        q = Queue()
+        q.put(Node(initial))
+        self._l.append(initial)
+        if initial in goal:
+            print("The goal is " + initial)
+            return 1
+        while not (q.empty()):
+            currentNode = q.get()
+            visited.append(currentNode.value)
+            for adj in self.graph.get(currentNode.value) or []:
+                if adj not in visited:
+                    temp = Node(adj, currentNode)
+                    if adj not in self._l and adj != []:
+                        self._l.append(adj)
+                    for x in goal:
+                        if adj == x:
+                            self._l.append(x)
+                            self.trace(temp)
+                            print()
+                            return 1
+                        q.put(temp)
+        return 0
 
     def update(self, frames, a):
         a.clear()
         if (frames < len(self._l)):
-            # print(self._Gr.node[self._l[frames]])
+            #print(self._Gr.node[self._l[frames]])
             i = 0
             for node in self._Gr.nodes:
                 print(node, " ", self._l[frames])
@@ -181,18 +211,54 @@ class DFS:
 #                               START OF BUTTON EVENT LISTENER                                      #
 ####################################################################################################
 
-def onClickRun(user_txtBox, type_var):
-  input = user_txtBox.get("1.0", "end-1c").split('\n')
-  if(type_var == 1):
-      dfs_inst = DFS(input)
-      dfs_inst.dfs('2','15')
-      #print(input, 'whatever', '15' is '15')
-      #dfs_inst.dfs('A','C')
-      dfs_inst.anim()
-      lbl_bottom['text'] = dfs_inst.solution
-      print(dfs_inst.solution)
-      print(dfs_inst._l)
-  print(input , 'whatever' )
+def onClickRun(user_firstNode,user_goal,user_txtBox, type_var):
+  input = user_txtBox.get("1.0", "end-1c").split('\n') #list of list
+  #inputFirstNode = user_firstNode.get("1.0", "end-1c").split(' ')
+  inputFirstNode = user_firstNode.get("1.0", "end-1c")
+  inputGoal= user_goal.get("1.0", "end-1c").split(' ')
+
+  formatted_input = []
+  for x in input:
+      formatted_input.append((x.split(' ')))
+
+  print("AAA")
+  print(formatted_input)
+  print(inputFirstNode)
+  print(inputGoal)
+  first = False
+
+  for item in formatted_input:
+      for list in item:
+          if list == inputFirstNode:
+              first = True
+
+
+
+  if first == True:
+      if(type_var == 0):
+          dfs_inst = DFS(formatted_input)
+          if dfs_inst.dfs(inputFirstNode, inputGoal) == 1:
+              lbl_bottom['text'] = dfs_inst.solution
+          else:
+              lbl_bottom['text'] = "Goal does not exist"
+
+          # print(input, 'whatever', '15' is '15')
+          # dfs_inst.dfs('A','C')
+          dfs_inst.anim()
+
+          print(dfs_inst.solution)
+          print(dfs_inst._l)
+      if (type_var == 1):
+          bfs_inst = DFS(formatted_input)
+          # bfs_inst.draw_graph()
+          bfs_inst.bfs(inputFirstNode,inputGoal)
+          bfs_inst.anim()
+          lbl_bottom['text'] = bfs_inst.solution
+          print(bfs_inst._l)
+      print(input , 'whatever' )
+
+  else:
+      tk.messagebox.showinfo("Error", "Check that the initial node is entered in the graph")
 
 #####################################################################################################
 #                              END OF OF BUTTON EVENT LISTENER                                     #
@@ -205,31 +271,46 @@ root = Tk()
 root.title("Search Methods Visualizer")
 
 frm_right = tk.Frame()
-lbl_uninformedSearch = tk.Label(master=frm_right, text="Uninformed Search", foreground="#CD5C5C")
+lbl_nodes = tk.Label(master=frm_right,width=15,height=1, text="Enter the nodes", foreground="#CD5C5C")
 # ent = tk.Entry(master=frm_right, fg="#CD5C5C", width=50)
-var = IntVar()
-r1 = Radiobutton(master=frm_right, text="dfs", variable=var, value=1)
-r2 = Radiobutton(master=frm_right, text="bfs", variable=var, value=2)
-r3 = Radiobutton(master=frm_right, text="dijkstra", variable=var, value=3)
-r4 = Radiobutton(master=frm_right, text="lim_dfs", variable=var, value=4)
-r5 = Radiobutton(master=frm_right, text="itr_dfs", variable=var, value=5)
-txt = tk.Text(master=frm_right, height=5, width=20)
-btn_Run = tk.Button(master=frm_right, text="Run",command=lambda:onClickRun(txt,var.get()) , width=15, height=1, fg="#CD5C5C")
-lbl_uninformedSearch.grid(row=0, column=0, padx=5, pady=5)
-r1.grid(row=1, column=0, padx=5, pady=1)
-r2.grid(row=2, column=0, padx=5, pady=1)
-r3.grid(row=3, column=0, padx=5, pady=1)
-r4.grid(row=4, column=0, padx=5, pady=1)
-r5.grid(row=5, column=0, padx=5, pady=1)
-txt.grid(row=6, column=0, padx=5, pady=1)
+var1 = tk.StringVar()
+lbl_firstNode = tk.Label(master=frm_right, text="Enter the initial node", width=15, height=1, fg="#CD5C5C")
+txtFirstNode = tk.Text(master=frm_right, height=1, width=3)
+lbl_goalNode = tk.Label(master=frm_right, text="Enter the goal node(s)", width=17, height=1, fg="#CD5C5C")
+txtgoalNode = tk.Text(master=frm_right, height=1, width=10)
+txt = tk.Text(master=frm_right, height=2, width=15)
+btn_Run = tk.Button(master=frm_right, text="Run",command=lambda:onClickRun(txtFirstNode,txtgoalNode,txt,algorithmChosen.current()) , width=15, height=1, fg="#CD5C5C")
+algorithmChosen = ttk.Combobox(master=frm_right, width = 27, textvariable = var1)
+algorithmChosen['values'] = ('dfs',
+                          'bfs',
+                          'dijkstra',
+                          'lim_dfs',
+                          'itr_dfs')
+
+lbl_nodes.grid(row=0, column=0, padx=5, pady=5)
+txt.grid(row=1, column=0, padx=5, pady=1)
+lbl_firstNode.grid(row=0, column=1, padx=5, pady=5)
+txtFirstNode.grid(row=1, column=1, padx=5, pady=1)
+lbl_goalNode.grid(row=2, column=1, padx=5, pady=5)
+txtgoalNode.grid(row=3, column=1, padx=5, pady=1)
 # ent.grid(row=1, column=0, padx=5, pady=5)
-btn_Run.grid(row=7, column=0, padx=5, pady=5)
+btn_Run.grid(row=4, column=0, padx=5, pady=5)
+algorithmChosen.grid(row=4, column=1)
+algorithmChosen.current(1)
+
+
 
 frm_left = tk.Frame()
 lbl_top = tk.Label(master=frm_left, text="Title", foreground="#CD5C5C")
+fig = plt.Figure(figsize=(5, 4))
+canvas = FigureCanvasTkAgg(fig, frm_left)
+canvas.draw()
+canvas.get_tk_widget().grid(row=1, column=0)
 lbl_bottom = tk.Label(master=frm_left, text="Written Results", foreground="#CD5C5C")
 lbl_top.grid(row=0, column=0, padx=5, pady=5)
 lbl_bottom.grid(row=2, column=0, padx=5, pady=5)
+
+
 
 frm_right.grid(row=0, column=1, padx=5, pady=5)
 frm_left.grid(row=0, column=0, padx=5, pady=5)
