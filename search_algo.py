@@ -31,9 +31,11 @@ D C
 '''
 
 class Node:
-    def __init__(self, value, parent=None):
+    def __init__(self, value, parent=None, depth = 0):
         self.value = value
         self.parent = parent
+        self.depth = depth
+
     def __str__(self):
         return str(self.value)
 #####################################################################################################
@@ -100,6 +102,7 @@ class DFS:
         stack.append(Node(init))
         self._l.append(init)
         if init in goal:
+            self.trace(Node(init))
             print("Initial is goal")
             return 1
         while stack:
@@ -126,9 +129,71 @@ class DFS:
             for node in stack:
                 print(node.value, end=" ")
             print()
+        self.solution = "GOAL NOT FOUND"
         print("Goal not found")
         return 0
-    
+
+    def limited_dfs(self, init, goal, depth_limit):
+        visited = []
+        stack = []
+        stack.append(Node(init))
+        self._l.append(init)
+        if init in goal:
+            self.trace(Node(init))
+            print("Initial is goal")
+            return 1
+        isCutOff = False
+        while stack:
+            curr_node = stack.pop()
+            visited.append(curr_node.value)
+            if curr_node.value not in self._l:
+                self._l.append(curr_node.value)
+                print("visitied ", visited)
+            for adj in self.graph.get(curr_node.value) or []:
+                if curr_node.depth + 1 > depth_limit:
+                    isCutOff = True
+                # if not in stack (but node vs value)
+                # https://stackoverflow.com/questions/55042460/comparing-user-defined-objects-in-two-lists
+                print("SSSSS")
+                if adj not in visited and curr_node.depth + 1 <= depth_limit:
+                    print("ERE")
+                    temp = Node(adj, curr_node, curr_node.depth + 1)
+                    print("sama ", adj, goal)
+                    for x in goal:
+                        if adj == x:
+                            self._l.append(x)
+                            self.trace(temp)
+                            print()
+                            return 1
+                    stack.append(temp)
+            for node in stack:
+                print(node.value, end=" ")
+            print()
+        if isCutOff:
+            self.solution = "GOAL NODE NOT FOUND WITHIN DEPTH OF" + str(depth_limit)
+            print("GOAL NODE NOT FOUND WITHIN DEPTH OF " + str(depth_limit))
+            return 2  # cutOff
+        else:
+            self.solution = "GOAL NOT FOUND"
+        return 0
+
+    def iterDeeping(self, intial, goal):
+        res = 2 #cutOff
+        depth_limit = 0
+        while res != 0:
+            res = self.limited_dfs(intial, goal,depth_limit)
+            if res == 1:
+                return 1
+            depth_limit += 1
+            lbl_bottom['text'] = self.solution
+            print("SALMAAAAAAAA " , self.solution)
+        #self.solution = "GOAL NOT FOUND"
+        lbl_bottom['text'] = self.solution
+        return 0
+
+
+
+
 
     def bfs(self, initial, goal):
         visited = []
@@ -136,6 +201,7 @@ class DFS:
         q.put(Node(initial))
         self._l.append(initial)
         if initial in goal:
+            self.trace(Node(initial))
             print("The goal is " + initial)
             return 1
         while not (q.empty()):
@@ -153,6 +219,7 @@ class DFS:
                             print()
                             return 1
                         q.put(temp)
+        self.solution = "GOAL NOT FOUND"
         return 0
 
     def update(self, frames, a):
@@ -211,11 +278,12 @@ class DFS:
 #                               START OF BUTTON EVENT LISTENER                                      #
 ####################################################################################################
 
-def onClickRun(user_firstNode,user_goal,user_txtBox, type_var):
+def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
   input = user_txtBox.get("1.0", "end-1c").split('\n') #list of list
   #inputFirstNode = user_firstNode.get("1.0", "end-1c").split(' ')
   inputFirstNode = user_firstNode.get("1.0", "end-1c")
   inputGoal= user_goal.get("1.0", "end-1c").split(' ')
+  inputDepthLmt = user_depthlmt.get("1.0", "end-1c")
 
   formatted_input = []
   for x in input:
@@ -237,17 +305,14 @@ def onClickRun(user_firstNode,user_goal,user_txtBox, type_var):
   if first == True:
       if(type_var == 0):
           dfs_inst = DFS(formatted_input)
-          if dfs_inst.dfs(inputFirstNode, inputGoal) == 1:
-              lbl_bottom['text'] = dfs_inst.solution
-          else:
-              lbl_bottom['text'] = "Goal does not exist"
-
+          dfs_inst.dfs(inputFirstNode, inputGoal)
+          dfs_inst.anim()
+          lbl_bottom['text'] = dfs_inst.solution
           # print(input, 'whatever', '15' is '15')
           # dfs_inst.dfs('A','C')
-          dfs_inst.anim()
-
           print(dfs_inst.solution)
           print(dfs_inst._l)
+
       if (type_var == 1):
           bfs_inst = DFS(formatted_input)
           # bfs_inst.draw_graph()
@@ -256,6 +321,25 @@ def onClickRun(user_firstNode,user_goal,user_txtBox, type_var):
           lbl_bottom['text'] = bfs_inst.solution
           print(bfs_inst._l)
       print(input , 'whatever' )
+
+      if (type_var == 3):
+          lmtDfs_inst = DFS(formatted_input)
+          # bfs_inst.draw_graph()
+          lmtDfs_inst.limited_dfs(inputFirstNode,inputGoal,int(inputDepthLmt))
+          lmtDfs_inst.anim()
+          lbl_bottom['text'] = lmtDfs_inst.solution
+          print(lmtDfs_inst._l)
+      print(input , 'whatever' )
+
+      if (type_var == 4):
+          print(input, 'LOOK HEREEEEEEEE')
+          iterDeepening_inst = DFS(formatted_input)
+          # bfs_inst.draw_graph()
+          iterDeepening_inst.iterDeeping(inputFirstNode, inputGoal)
+          iterDeepening_inst.anim()
+          #lbl_bottom['text'] = iterDeepening_inst.solution
+          print(iterDeepening_inst._l)
+      print(input, 'whatever')
 
   else:
       tk.messagebox.showinfo("Error", "Check that the initial node is entered in the graph")
@@ -278,8 +362,10 @@ lbl_firstNode = tk.Label(master=frm_right, text="Enter the initial node", width=
 txtFirstNode = tk.Text(master=frm_right, height=1, width=3)
 lbl_goalNode = tk.Label(master=frm_right, text="Enter the goal node(s)", width=17, height=1, fg="#CD5C5C")
 txtgoalNode = tk.Text(master=frm_right, height=1, width=10)
+lbl_depthLmt = tk.Label(master=frm_right, text="Enter the depth limit", width=15, height=1, fg="#CD5C5C")
+txtDepthLmt = tk.Text(master=frm_right, height=1, width=3)
 txt = tk.Text(master=frm_right, height=2, width=15)
-btn_Run = tk.Button(master=frm_right, text="Run",command=lambda:onClickRun(txtFirstNode,txtgoalNode,txt,algorithmChosen.current()) , width=15, height=1, fg="#CD5C5C")
+btn_Run = tk.Button(master=frm_right, text="Run",command=lambda:onClickRun(txtFirstNode,txtgoalNode,txt ,algorithmChosen.current(),txtDepthLmt) , width=15, height=1, fg="#CD5C5C")
 algorithmChosen = ttk.Combobox(master=frm_right, width = 27, textvariable = var1)
 algorithmChosen['values'] = ('dfs',
                           'bfs',
@@ -293,9 +379,11 @@ lbl_firstNode.grid(row=0, column=1, padx=5, pady=5)
 txtFirstNode.grid(row=1, column=1, padx=5, pady=1)
 lbl_goalNode.grid(row=2, column=1, padx=5, pady=5)
 txtgoalNode.grid(row=3, column=1, padx=5, pady=1)
+lbl_depthLmt.grid(row=4, column=1, padx=5, pady=5)
+txtDepthLmt.grid(row=5, column=1, padx=5, pady=1)
 # ent.grid(row=1, column=0, padx=5, pady=5)
-btn_Run.grid(row=4, column=0, padx=5, pady=5)
-algorithmChosen.grid(row=4, column=1)
+btn_Run.grid(row=6, column=0, padx=5, pady=5)
+algorithmChosen.grid(row=6, column=1)
 algorithmChosen.current(1)
 
 
