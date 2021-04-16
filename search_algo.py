@@ -9,8 +9,10 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 #####################################################################################################
 #                                         N O T E S                                                #
 ####################################################################################################
-#TO_DO : Handel cases when goals is not found and goal equals start
 #TO_DO : Di_Graph
+#TO_DO : handel error when limited dfs and no depth limit entered ('' parsed to int)
+#TO_DO : add text res to update func (animation) {iterative deepening}
+#TO_DO : implement dijkstra
 '''
 0 1 2 3 4
 1 4 5
@@ -190,9 +192,6 @@ class DFS:
         #self.solution = "GOAL NOT FOUND"
         lbl_bottom['text'] = self.solution
         return 0
-
-
-
 
 
     def bfs(self, initial, goal):
