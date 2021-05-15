@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import tkinter as tk
-#import pydot
+import pydot
 from matplotlib import animation
 from queue import Queue
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -30,6 +30,12 @@ from collections import defaultdict
 9 19 20
 10 21 22
 11 23 24
+
+1 2 1
+1 3 1
+2 3 3
+3 4 4
+4 1 5
 //another input (modify goal and initial as well)
 A B D
 B C
@@ -52,7 +58,7 @@ class Node:
 #                                        START OF DFS                                              #
 ####################################################################################################
 class DFS:
-    def __init__(self, formatted_input, weighted):
+    def __init__(self, formatted_input, weighted=False, isGreedy=False):
         '''
         self.graph = {'A': ['B', 'D'],
                 'B': ['C'],
@@ -65,6 +71,7 @@ class DFS:
         self.graph = defaultdict(list)
         self.dictDistance = {}
         self.weight = weighted
+        self.isGreedy = isGreedy
 
         if not weighted:
             for lst in formatted_input:
@@ -98,7 +105,6 @@ class DFS:
         if not weighted:
             for key_node in self.graph:
                 self._Gr.add_node(key_node)
-                print(self.graph[key_node])
                 for adj in self.graph[key_node]:
                     self._Gr.add_node(adj)
                     self._Gr.add_edge(key_node, adj)
@@ -113,6 +119,7 @@ class DFS:
         self._l = []
         self.shortestPath = []
         self.solution = ""
+        self.heuristicGreedy = {}
         self._colors = ['blue'] * self._Gr.number_of_nodes()
         # self._layout = nx.spring_layout(self._Gr,scale=30, k=1/math.sqrt(self._Gr.order()))
         self._layout = graphviz_layout(self._Gr)
@@ -253,10 +260,13 @@ class DFS:
         return 0
 
     def uniformCost(self, initial, goal):
+        # distance = [int(10e9)] * self._Gr.number_of_nodes()
         pq = PriorityQueue()
+        # distance[int(initial)] = 0
         self.dictDistance[initial] = 0
         pq.put(Node(value=initial, cost=0))
-        self._l.append([Node(value=initial,cost=self.dictDistance[initial]),self.dictDistance.copy()])#[intial] .get()
+        self._l.append(Node(value=initial, cost=self.dictDistance.get(initial)))
+
         if initial in goal:
             self.trace(Node(value=initial))
             print("The goal is " + initial)
@@ -264,76 +274,194 @@ class DFS:
 
         while not (pq.empty()):
             currentN = pq.get()
-            print(" HEREE " + currentN.value)
             for cn in goal:
-                if cn == currentN.value:  # SOLVED currentN.value NOT CurrentN
-                    self.trace(currentN)  # SOLVED no NODE here
-                    print("The goal is " + currentN.value)  # SOLVED currentN.value NOT CurrentN
+                if cn == currentN.value:
+                    self.trace(currentN)
+                    print("The goal is " + currentN.value)
+
                     return 1
-            print(self.graph.keys())
-            print(currentN.value)
-            print(self.graph.get(currentN.value))
+
             for adjNode in self.graph.get(currentN.value) or []:
-                if ((self.dictDistance.get(currentN.value) + int(adjNode.cost)) < (self.dictDistance.get(adjNode.value))):
+                if ((self.dictDistance.get(currentN.value) + int(adjNode.cost)) < (
+                        self.dictDistance.get(adjNode.value))):
                     self.dictDistance[adjNode.value] = self.dictDistance.get(currentN.value) + int(adjNode.cost)
-                    print("CRY")
-                    print(self._l)
-                    print(self.dictDistance)
-                    self._l.append([Node(value=adjNode.value, cost=self.dictDistance[adjNode.value]), self.dictDistance.copy() ])
+                    self._l.append(Node(value=adjNode.value, cost=self.dictDistance.get(adjNode.value)))
                     temp = Node(value=adjNode.value, parent=currentN, cost=self.dictDistance.get(adjNode.value))
                     pq.put(temp)
+                    print("pq", pq)
 
+        self.solution = "GOAL NOT FOUND"
+        return 0
+
+    def greedy(self, initial, goal):
+        #cost of node attribute represents heuristic
+        print("finally")
+        for nodeVal in self._Gr.nodes:
+            sum = 0
+            lstPath = nx.shortest_path(self._Gr, nodeVal, goal[0])
+            for x in range(len(lstPath) - 1):
+                sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
+            self.heuristicGreedy[nodeVal] = sum
+        print(self.heuristicGreedy)
+
+        pq = PriorityQueue()
+        visited = []
+        pq.put(Node(value=initial, cost = self.heuristicGreedy[initial]))
+        self._l.append(initial)
+        if initial == goal[0]:
+            self.trace(Node(value=initial))
+            print("The goal is " + initial)
+            return 1
+        while not (pq.empty()):
+            currentN = pq.get()
+            visited.append(currentN.value)
+            if currentN.value == goal[0]:
+                self.trace(currentN)
+                print("The goal is " + currentN.value)
+                return 1
+            for adjNode in self.graph.get(currentN.value) or []:
+                if adjNode.value not in visited:
+                    self._l.append(adjNode.value)
+                    visited.append(adjNode.value)
+                    pq.put(Node(value=adjNode.value,parent=currentN,cost = self.heuristicGreedy[adjNode.value]))
+                    print("pq", pq)
         self.solution = "GOAL NOT FOUND"
         return 0
 
     def update(self, frames, a):
         a.clear()
-        if frames < len(self._l):
-            a.set_title("Frame {}".format(frames))
-            i = 0
-            for node in self._Gr.nodes:
-                print(self._l)
-                print(node)
-                print(self._l[frames])
-                print(self._l[frames])
-               # print(self._l[frames].value())
-                if node == self._l[frames][0].value: #here frames[0] could be only a value instead of node
-                    break
-                i += 1
-            self._colors[i] = 'orange'
+        if self.isGreedy:
+            if frames < len(self._l):
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self._l[frames])
+                    if node == self._l[frames]:
+                        break
+                    i += 1
+                print("JJ"+str(i))
+                self._colors[i] = 'orange'
+                pos_attrs = {}
+                for node, coords in self._layout.items():
+                    pos_attrs[node] = (coords[0], coords[1] + 4)
 
-            # nx.draw(self._Gr, pos=self._layout, with_labels=False,ax=a)
-            nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
-            pos_attrs = {}
-            for node, coords in self._layout.items():
-                pos_attrs[node] = (coords[0], coords[1] + 4)
-                print(self._layout.items())
-                print(pos_attrs)
-            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
-            print("SAMA")
-            print( self._l[frames][1])
-            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self._l[frames][1], ax=a)
+                custom_node_attrs = {}
+                for node in self.heuristicGreedy.keys():
+                    custom_node_attrs[node] = "{'h': '" + str(self.heuristicGreedy[node]) + "'}"
+                nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
+                # Set the title
+                nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)
+                nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=custom_node_attrs, ax=a)
+                a.set_title("Frame {}".format(frames))
+            else:
+                a.clear()
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self.shortestPath[frames - len(self._l)])
+                    if node == self.shortestPath[frames - len(self._l)]:
+                        break
+                    i += 1
+                self._colors[i] = 'red'
+                pos_attrs = {}
+                for node, coords in self._layout.items():
+                    pos_attrs[node] = (coords[0], coords[1] + 4)
+
+                custom_node_attrs = {}
+                for node in self.heuristicGreedy.keys():
+                    custom_node_attrs[node] = "{'h': '" + str(self.heuristicGreedy[node]) + "'}"
+                nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
+                # Set the title
+                nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)
+                nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=custom_node_attrs, ax=a)
+                a.set_title("Frame {}".format(frames))
+
+            if frames == len(self._l + self.shortestPath) - 1:
+                self._colors = ['blue'] * self._Gr.number_of_nodes()
+
+
+
+        elif self.weight:
+            if frames < len(self._l):
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self._l[frames])
+                    if node == self._l[frames].value:
+                        break
+                    i += 1
+
+                self._colors[i] = 'orange'
+                self.nodeLabels[self._l[frames].value] = self._l[frames].cost
+                pos_attrs = {}
+                for node, coords in self._layout.items():
+                    pos_attrs[node] = (coords[0], coords[1] + 4)
+
+                custom_node_attrs = {}
+                for node, attr in self.nodeLabels.items():
+                    custom_node_attrs[node] = "{'d': '" + str(attr) + "'}"
+
+                nx.draw_networkx(self._Gr,pos=self._layout, with_labels=True, node_color=self._colors,
+                                 ax=a)
+                # nx.draw(self._Gr, pos=graphviz_layout(self._Gr), with_labels=True)
+                nx.draw_networkx_edge_labels(self._Gr, pos = self._layout, edge_labels=self.labels, ax=a)
+                nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=custom_node_attrs, ax=a)
+
+                # Set the title
+                a.set_title("Frame {}".format(frames))
+
+            else:
+                a.clear()
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self.shortestPath[frames - len(self._l)])
+                    if node == self.shortestPath[frames - len(self._l)]:
+                        break
+                    i += 1
+                self._colors[i] = 'red'
+                pos_attrs = {}
+                for node, coords in self._layout.items():
+                    pos_attrs[node] = (coords[0], coords[1] + 4)
+
+                custom_node_attrs = {}
+                for node, attr in self.nodeLabels.items():
+                    custom_node_attrs[node] = "{'d': '" + str(attr) + "'}"
+
+                nx.draw_networkx(self._Gr,  pos=self._layout, with_labels=True, node_color=self._colors,
+                                 ax=a)
+                # nx.draw(self._Gr, pos=graphviz_layout(self._Gr), with_labels=True)
+                nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)
+                nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=custom_node_attrs, ax=a)
+                a.set_title("Frame {}".format(frames))
+
+            if frames == len(self._l + self.shortestPath) - 1:
+                self._colors = ['blue'] * self._Gr.number_of_nodes()
+                for key in self.nodeLabels.keys():
+                    self.nodeLabels[key] = 10e9
         else:
-            a.set_title("Frame {}".format(frames))
-            i = 0
-            for node in self._Gr.nodes:
-                print(node, " ", self.shortestPath[frames - len(self._l)])
-                if node == self.shortestPath[frames - len(self._l)]:
-                    break
-                i += 1
-            self._colors[i] = 'red'
+            if frames < len(self._l):
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self._l[frames])
+                    if node == self._l[frames]:
+                        break
+                    i += 1
+                self._colors[i] = 'orange'
+                nx.draw_networkx(self._Gr,  pos=self._layout, node_color=self._colors, ax=a)
+                # Set the title
+                a.set_title("Frame {}".format(frames))
 
-            nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
-            pos_attrs = {}
-            for node, coords in self._layout.items():
-                pos_attrs[node] = (coords[0], coords[1] + 4)
-                print(self._layout.items())
-                print(pos_attrs)
-            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
-            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self.dictDistance, ax=a)
+            else:
+                a.clear()
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self.shortestPath[frames - len(self._l)])
+                    if node == self.shortestPath[frames - len(self._l)]:
+                        break
+                    i += 1
+                self._colors[i] = 'red'
+                nx.draw_networkx(self._Gr,  pos=self._layout, node_color=self._colors, ax=a)
+                a.set_title("Frame {}".format(frames))
 
-        if frames == len(self._l + self.shortestPath) - 1:
-            self._colors = ['blue'] * self._Gr.number_of_nodes()
+            if frames == len(self._l + self.shortestPath) - 1:
+                self._colors = ['blue'] * self._Gr.number_of_nodes()
 
     def anim(self):
         fig = plt.Figure(figsize=(5, 4))
@@ -343,86 +471,11 @@ class DFS:
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
-        if self.weight:
-            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400, fargs={ax})
-        else:
-            print(len(self._l))
-            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,
-                                          fargs={ax})
+        print(len(self._l))
+        ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,fargs={ax})
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
-'''
-    def update(self, frames, a):
-        a.clear()
-        if self.weight == True:
-            a.set_title("Frame {}".format(frames))
-            i = 0
-            for node in self._Gr.nodes:
-                print(node, " ", self.shortestPath[frames])
-                if node == self.shortestPath[frames]:
-                    break
-                i += 1
-            self._colors[i] = 'red'
-
-            #nx.draw(self._Gr, pos=self._layout, with_labels=False,ax=a)
-            nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
-            pos_attrs = {}
-            for node, coords in self._layout.items():
-                pos_attrs[node] = (coords[0], coords[1] + 4)
-                print(self._layout.items())
-                print(pos_attrs)
-            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
-            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self.dictDistance, ax=a)
-
-
-        elif frames < len(self._l):
-            # print(self._Gr.node[self._l[frames]])
-            i = 0
-            for node in self._Gr.nodes:
-                print(node, " ", self._l[frames])
-                if node == self._l[frames]:
-                    break
-                i += 1
-            self._colors[i] = 'orange'
-            # print(self._l[frames])
-            # print(self._l)
-            nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
-            # Set the title
-            a.set_title("Frame {}".format(frames))
-        else:
-            a.clear()
-            i = 0
-            for node in self._Gr.nodes:
-                print(node, " ", self.shortestPath[frames - len(self._l)])
-                if node == self.shortestPath[frames - len(self._l)]:
-                    break
-                i += 1
-            self._colors[i] = 'red'
-            nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
-            a.set_title("Frame {}".format(frames))
-
-        if frames == len(self._l + self.shortestPath) - 1:
-            self._colors = ['blue'] * self._Gr.number_of_nodes()
-
-    def anim(self):
-        fig = plt.Figure(figsize=(5, 4))
-        ax = fig.add_subplot(111)
-        plt.axis('off')
-        # nx.draw_networkx(self._Gr, pos=self._layout, ax=ax)
-        canvas = FigureCanvasTkAgg(fig, frm_left)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=1, column=0)
-        if self.weight:
-            ani = animation.FuncAnimation(fig, self.update, frames=len(self.shortestPath), interval=400, fargs={ax})
-        else:
-            print(len(self._l))
-            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,
-                                          fargs={ax})
-        canvas = FigureCanvasTkAgg(fig, frm_left)
-        canvas.draw()
-        canvas.get_tk_widget().grid(row=1, column=0)
-'''
 
 
 
@@ -463,7 +516,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
 
   if first == True:
       if(type_var == 0):
-          dfs_inst = DFS(formatted_input,weighted=False)
+          dfs_inst = DFS(formatted_input)
           dfs_inst.dfs(inputFirstNode, inputGoal)
           dfs_inst.anim()
           lbl_bottom['text'] = dfs_inst.solution
@@ -473,7 +526,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           print(dfs_inst._l)
 
       if (type_var == 1):
-          bfs_inst = DFS(formatted_input,weighted=False)
+          bfs_inst = DFS(formatted_input)
           # bfs_inst.draw_graph()
           bfs_inst.bfs(inputFirstNode,inputGoal)
           bfs_inst.anim()
@@ -489,7 +542,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
          # print(ucs_inst._l)
 
       if (type_var == 3):
-          lmtDfs_inst = DFS(formatted_input,weighted=False)
+          lmtDfs_inst = DFS(formatted_input)
           # bfs_inst.draw_graph()
           lmtDfs_inst.limited_dfs(inputFirstNode,inputGoal,int(inputDepthLmt))
           lmtDfs_inst.anim()
@@ -506,6 +559,13 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           #lbl_bottom['text'] = iterDeepening_inst.solution
           print(iterDeepening_inst._l)
       print(input, 'whatever')
+
+      if (type_var == 5):
+          greedy_inst = DFS(formatted_input,weighted= True, isGreedy=True)
+          greedy_inst.greedy(inputFirstNode, inputGoal)
+          greedy_inst.anim()
+          #lbl_bottom['text'] = ucs_inst.solution
+      # print(ucs_inst._l)
 
   else:
       tk.messagebox.showinfo("Error", "Check that the initial node is entered in the graph")
@@ -537,7 +597,8 @@ algorithmChosen['values'] = ('dfs',
                           'bfs',
                           'dijkstra',
                           'lim_dfs',
-                          'itr_dfs')
+                          'itr_dfs',
+                             'Greedy')
 
 lbl_nodes.grid(row=0, column=0, padx=5, pady=5)
 txt.grid(row=1, column=0, padx=5, pady=1)
