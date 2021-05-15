@@ -3,10 +3,12 @@ from tkinter import *
 from tkinter import ttk
 import matplotlib.pyplot as plt
 import tkinter as tk
+#import pydot
 from matplotlib import animation
 from queue import Queue
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from queue import PriorityQueue
+from networkx.drawing.nx_pydot import pydot_layout, graphviz_layout
 from collections import defaultdict
 #####################################################################################################
 #                                         N O T E S                                                #
@@ -44,8 +46,8 @@ class Node:
     def __lt__(self, other):
         return self.cost < other.cost
 
-    def __str__(self):
-        return str(self.value)
+   # def __str__(self):
+        #return str(self.value)
 #####################################################################################################
 #                                        START OF DFS                                              #
 ####################################################################################################
@@ -91,7 +93,7 @@ class DFS:
                       11: [23, 24],
                       }
         '''
-        self._Gr = nx.Graph()
+        self._Gr = nx.DiGraph()
 
         if not weighted:
             for key_node in self.graph:
@@ -102,17 +104,19 @@ class DFS:
                     self._Gr.add_edge(key_node, adj)
         else:
             for line in formatted_input:
-                self._Gr.add_node(line[0])
-                self._Gr.add_node(line[1])
+                self._Gr.add_node(line[0], distance=self.dictDistance[line[0]])
+                self._Gr.add_node(line[1], distace=self.dictDistance[line[1]])
                 self._Gr.add_edge(line[0], line[1], weight=line[2])
             self.labels = nx.get_edge_attributes(self._Gr, 'weight')
+            self.nodeLabels = nx.get_node_attributes(self._Gr, 'distance')
 
         self._l = []
         self.shortestPath = []
         self.solution = ""
         self._colors = ['blue'] * self._Gr.number_of_nodes()
         # self._layout = nx.spring_layout(self._Gr,scale=30, k=1/math.sqrt(self._Gr.order()))
-        self._layout = nx.spring_layout(self._Gr)
+        self._layout = graphviz_layout(self._Gr)
+        #self._layout = nx.spring_layout(self._Gr)
 
     def trace(self, goal):
         if goal.parent is None:
@@ -252,6 +256,7 @@ class DFS:
         pq = PriorityQueue()
         self.dictDistance[initial] = 0
         pq.put(Node(value=initial, cost=0))
+        self._l.append([Node(value=initial,cost=self.dictDistance[initial]),self.dictDistance.copy()])#[intial] .get()
         if initial in goal:
             self.trace(Node(value=initial))
             print("The goal is " + initial)
@@ -269,15 +274,85 @@ class DFS:
             print(currentN.value)
             print(self.graph.get(currentN.value))
             for adjNode in self.graph.get(currentN.value) or []:
-                if ((self.dictDistance.get(currentN.value) + int(adjNode.cost)) < (
-                        self.dictDistance.get(adjNode.value))):
+                if ((self.dictDistance.get(currentN.value) + int(adjNode.cost)) < (self.dictDistance.get(adjNode.value))):
                     self.dictDistance[adjNode.value] = self.dictDistance.get(currentN.value) + int(adjNode.cost)
+                    print("CRY")
+                    print(self._l)
+                    print(self.dictDistance)
+                    self._l.append([Node(value=adjNode.value, cost=self.dictDistance[adjNode.value]), self.dictDistance.copy() ])
                     temp = Node(value=adjNode.value, parent=currentN, cost=self.dictDistance.get(adjNode.value))
                     pq.put(temp)
 
         self.solution = "GOAL NOT FOUND"
         return 0
 
+    def update(self, frames, a):
+        a.clear()
+        if frames < len(self._l):
+            a.set_title("Frame {}".format(frames))
+            i = 0
+            for node in self._Gr.nodes:
+                print(self._l)
+                print(node)
+                print(self._l[frames])
+                print(self._l[frames])
+               # print(self._l[frames].value())
+                if node == self._l[frames][0].value: #here frames[0] could be only a value instead of node
+                    break
+                i += 1
+            self._colors[i] = 'orange'
+
+            # nx.draw(self._Gr, pos=self._layout, with_labels=False,ax=a)
+            nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
+            pos_attrs = {}
+            for node, coords in self._layout.items():
+                pos_attrs[node] = (coords[0], coords[1] + 4)
+                print(self._layout.items())
+                print(pos_attrs)
+            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
+            print("SAMA")
+            print( self._l[frames][1])
+            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self._l[frames][1], ax=a)
+        else:
+            a.set_title("Frame {}".format(frames))
+            i = 0
+            for node in self._Gr.nodes:
+                print(node, " ", self.shortestPath[frames - len(self._l)])
+                if node == self.shortestPath[frames - len(self._l)]:
+                    break
+                i += 1
+            self._colors[i] = 'red'
+
+            nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
+            pos_attrs = {}
+            for node, coords in self._layout.items():
+                pos_attrs[node] = (coords[0], coords[1] + 4)
+                print(self._layout.items())
+                print(pos_attrs)
+            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
+            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self.dictDistance, ax=a)
+
+        if frames == len(self._l + self.shortestPath) - 1:
+            self._colors = ['blue'] * self._Gr.number_of_nodes()
+
+    def anim(self):
+        fig = plt.Figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        plt.axis('off')
+        # nx.draw_networkx(self._Gr, pos=self._layout, ax=ax)
+        canvas = FigureCanvasTkAgg(fig, frm_left)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=1, column=0)
+        if self.weight:
+            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400, fargs={ax})
+        else:
+            print(len(self._l))
+            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,
+                                          fargs={ax})
+        canvas = FigureCanvasTkAgg(fig, frm_left)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=1, column=0)
+'''
     def update(self, frames, a):
         a.clear()
         if self.weight == True:
@@ -289,8 +364,17 @@ class DFS:
                     break
                 i += 1
             self._colors[i] = 'red'
-            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
+
+            #nx.draw(self._Gr, pos=self._layout, with_labels=False,ax=a)
             nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
+            pos_attrs = {}
+            for node, coords in self._layout.items():
+                pos_attrs[node] = (coords[0], coords[1] + 4)
+                print(self._layout.items())
+                print(pos_attrs)
+            nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)  # SOLVED ADD AX=A
+            nx.draw_networkx_labels(self._Gr, pos=pos_attrs, labels=self.dictDistance, ax=a)
+
 
         elif frames < len(self._l):
             # print(self._Gr.node[self._l[frames]])
@@ -338,6 +422,9 @@ class DFS:
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
+'''
+
+
 
 
 #####################################################################################################
