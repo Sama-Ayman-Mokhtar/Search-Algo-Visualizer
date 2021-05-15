@@ -295,6 +295,7 @@ class DFS:
 
     def greedy(self, initial, goal):
         #cost of node attribute represents heuristic
+        #calc heuristic (i didnt sub or mult by a const)
         print("finally")
         for nodeVal in self._Gr.nodes:
             sum = 0
@@ -303,7 +304,7 @@ class DFS:
                 sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
             self.heuristicGreedy[nodeVal] = sum
         print(self.heuristicGreedy)
-
+        #end calc heuristic
         pq = PriorityQueue()
         visited = []
         pq.put(Node(value=initial, cost = self.heuristicGreedy[initial]))
@@ -564,7 +565,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           greedy_inst = DFS(formatted_input,weighted= True, isGreedy=True)
           greedy_inst.greedy(inputFirstNode, inputGoal)
           greedy_inst.anim()
-          #lbl_bottom['text'] = ucs_inst.solution
+          lbl_bottom['text'] = greedy_inst.solution
       # print(ucs_inst._l)
 
   else:
