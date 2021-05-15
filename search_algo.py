@@ -6,6 +6,8 @@ import tkinter as tk
 from matplotlib import animation
 from queue import Queue
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from queue import PriorityQueue
+from collections import defaultdict
 #####################################################################################################
 #                                         N O T E S                                                #
 ####################################################################################################
@@ -33,16 +35,113 @@ D C
 '''
 
 class Node:
-    def __init__(self, value, parent=None, depth = 0):
+    def __init__(self, value, parent=None, depth = 0, cost = -100):
         self.value = value
         self.parent = parent
         self.depth = depth
+        self.cost = cost
+
+    def __lt__(self, other):
+        return self.cost < other.cost
 
     def __str__(self):
         return str(self.value)
 #####################################################################################################
 #                                        START OF DFS                                              #
 ####################################################################################################
+class Dijkstra:
+    def __init__(self, formatted_input):
+        self.graph = defaultdict(list)
+        self.dictDistance = {}
+        for lst in formatted_input:
+            self.dictDistance[lst[0]] = 10e9
+            self.dictDistance[lst[1]] = 10e9
+            self.graph[lst[0]].append(Node(value=lst[1], cost=lst[2]))
+            self.graph[lst[1]]
+
+        self._Gr = nx.Graph()
+        for line in formatted_input:
+            self._Gr.add_node(line[0])
+            self._Gr.add_node(line[1])
+            self._Gr.add_edge(line[0], line[1], weight=line[2])
+        self.labels = nx.get_edge_attributes(self._Gr, 'weight')
+
+        self._l = []
+        self.shortestPath = []
+        self.solution = ""
+        self._colors = ['blue'] * self._Gr.number_of_nodes()
+        self._layout = nx.spring_layout(self._Gr)
+
+    def trace(self, goal):
+        if goal.parent is None:
+            print(goal.value, end=" ")
+            self.solution = self.solution + str(goal.value)
+            self.shortestPath.append(goal.value)
+            return
+        self.trace(goal.parent)
+        self.solution = self.solution + " -> " + str(goal.value)
+        self.shortestPath.append(goal.value)
+        print(" -> ", goal.value, end=" ")
+
+    def uniformCost(self, initial, goal):
+        pq = PriorityQueue()
+        self.dictDistance[initial]=0
+        pq.put(Node(value=initial,cost=0))
+        if initial in goal:
+            self.trace(Node(value=initial))
+            print("The goal is " + initial)
+            return 1
+
+        while not (pq.empty()):
+            currentN = pq.get()
+            print(" HEREE " + currentN.value)
+            for cn in goal:
+                if cn == currentN.value: #SOLVED currentN.value NOT CurrentN
+                    self.trace(currentN) #SOLVED no NODE here
+                    print("The goal is " + currentN.value) #SOLVED currentN.value NOT CurrentN
+                    return 1
+            print(self.graph.keys())
+            print(currentN.value)
+            print(self.graph.get(currentN.value))
+            for adjNode in self.graph.get(currentN.value) or []:
+                if ((self.dictDistance.get(currentN.value) + int(adjNode.cost)) < (
+                        self.dictDistance.get(adjNode.value))):
+                    self.dictDistance[adjNode.value] = self.dictDistance.get(currentN.value) + int(adjNode.cost)
+                    temp = Node(value=adjNode.value, parent=currentN, cost=self.dictDistance.get(adjNode.value))
+                    pq.put(temp)
+
+        self.solution = "GOAL NOT FOUND"
+        return 0
+
+    def update(self, frames, a):
+        a.clear()
+        a.set_title("Frame {}".format(frames))
+        i = 0
+        for node in self._Gr.nodes:
+            print(node, " ", self.shortestPath[frames])
+            if node == self.shortestPath[frames]:
+                break
+            i += 1
+        self._colors[i] = 'red'
+        nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels,ax=a)#SOLVED ADD AX=A
+        nx.draw_networkx(self._Gr, pos=self._layout, with_labels=True, node_color=self._colors, ax=a)
+
+        if frames == len(self.shortestPath) - 1:
+            self._colors = ['blue'] * self._Gr.number_of_nodes()
+    def anim(self):
+        fig = plt.Figure(figsize=(5, 4))
+        ax = fig.add_subplot(111)
+        plt.axis('off')
+        # nx.draw_networkx(self._Gr, pos=self._layout, ax=ax)
+        canvas = FigureCanvasTkAgg(fig, frm_left)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=1, column=0)
+        print(len(self._l))
+        ani = animation.FuncAnimation(fig, self.update, frames=len(self.shortestPath), interval=400, fargs={ax})
+        canvas = FigureCanvasTkAgg(fig, frm_left)
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=1, column=0)
+
 class DFS:
     def __init__(self, formatted_input):
         '''
@@ -101,10 +200,10 @@ class DFS:
     def dfs(self, init, goal):
         visited = []
         stack = []
-        stack.append(Node(init))
+        stack.append(Node(value=init))
         self._l.append(init)
         if init in goal:
-            self.trace(Node(init))
+            self.trace(Node(value=init))
             print("Initial is goal")
             return 1
         while stack:
@@ -119,7 +218,7 @@ class DFS:
                 print("SSSSS")
                 if adj not in visited:
                     print("ERE")
-                    temp = Node(adj, curr_node)
+                    temp = Node(value=adj, parent = curr_node)
                     print("sama " , adj , goal)
                     for x in goal:
                         if adj == x:
@@ -138,10 +237,10 @@ class DFS:
     def limited_dfs(self, init, goal, depth_limit):
         visited = []
         stack = []
-        stack.append(Node(init))
+        stack.append(Node(value=init))
         self._l.append(init)
         if init in goal:
-            self.trace(Node(init))
+            self.trace(Node(value=init))
             print("Initial is goal")
             return 1
         isCutOff = False
@@ -159,7 +258,7 @@ class DFS:
                 print("SSSSS")
                 if adj not in visited and curr_node.depth + 1 <= depth_limit:
                     print("ERE")
-                    temp = Node(adj, curr_node, curr_node.depth + 1)
+                    temp = Node(value=adj, parent=curr_node, depth=curr_node.depth + 1)
                     print("sama ", adj, goal)
                     for x in goal:
                         if adj == x:
@@ -197,10 +296,10 @@ class DFS:
     def bfs(self, initial, goal):
         visited = []
         q = Queue()
-        q.put(Node(initial))
+        q.put(Node(value=initial))
         self._l.append(initial)
         if initial in goal:
-            self.trace(Node(initial))
+            self.trace(Node(value=initial))
             print("The goal is " + initial)
             return 1
         while not (q.empty()):
@@ -208,7 +307,7 @@ class DFS:
             visited.append(currentNode.value)
             for adj in self.graph.get(currentNode.value) or []:
                 if adj not in visited:
-                    temp = Node(adj, currentNode)
+                    temp = Node(value=adj, parent=currentNode)
                     if adj not in self._l and adj != []:
                         self._l.append(adj)
                     for x in goal:
@@ -320,6 +419,13 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           lbl_bottom['text'] = bfs_inst.solution
           print(bfs_inst._l)
       print(input , 'whatever' )
+
+      if (type_var == 2):
+          ucs_inst = Dijkstra(formatted_input)
+          ucs_inst.uniformCost(inputFirstNode, inputGoal)
+          ucs_inst.anim()
+          #lbl_bottom['text'] = ucs_inst.solution
+         # print(ucs_inst._l)
 
       if (type_var == 3):
           lmtDfs_inst = DFS(formatted_input)
