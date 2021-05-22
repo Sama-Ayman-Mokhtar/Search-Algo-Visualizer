@@ -117,7 +117,7 @@ class Graph:
         self._l = []
         self.shortestPath = []
         self.solution = ""
-        self.heuristicGreedy = {}
+        self.heuristic = {}
         self._colors = ['blue'] * self._Gr.number_of_nodes()
         # self._layout = nx.spring_layout(self._Gr,scale=30, k=1/math.sqrt(self._Gr.order()))
         self._layout = graphviz_layout(self._Gr)
@@ -300,12 +300,12 @@ class Graph:
             lstPath = nx.shortest_path(self._Gr, nodeVal, goal[0])
             for x in range(len(lstPath) - 1):
                 sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
-            self.heuristicGreedy[nodeVal] = sum
-        print(self.heuristicGreedy)
+            self.heuristic[nodeVal] = sum
+        print(self.heuristic)
         #end calc heuristic
         pq = PriorityQueue()
         visited = []
-        pq.put(Node(value=initial, cost = self.heuristicGreedy[initial]))
+        pq.put(Node(value=initial, cost = self.heuristic[initial]))
         self._l.append(initial)
         if initial == goal[0]:
             self.trace(Node(value=initial))
@@ -322,8 +322,80 @@ class Graph:
                 if adjNode.value not in visited:
                     self._l.append(adjNode.value)
                     visited.append(adjNode.value)
-                    pq.put(Node(value=adjNode.value,parent=currentN,cost = self.heuristicGreedy[adjNode.value]))
+                    pq.put(Node(value=adjNode.value,parent=currentN,cost = self.heuristic[adjNode.value]))
                     print("pq", pq)
+        self.solution = "GOAL NOT FOUND"
+        return 0
+
+    def aStar(self, initial, goal):
+
+        goalExist = False
+        for node in self._Gr.nodes:
+            for x in goal:
+                if node == x:
+                    goal[0] = x
+                    goalExist = True
+                    break
+
+        print("goal[0] is ", goal[0])
+        if goalExist == False:
+            print("Goal doesn't exist")
+            return 0
+
+        for node in self._Gr.nodes:
+            sum = 0
+            lstPath = nx.shortest_path(self._Gr, node, goal[0])
+            for x in range(len(lstPath) - 1):
+                sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
+            self.heuristic[node] = sum
+
+        print("MMMMM", self.heuristic)
+
+        pq = PriorityQueue()
+        visited = []
+        self.dictDistance[initial] = 0
+        print("AAAAAAAAA", self.dictDistance[initial])
+        pq.put(Node(value=initial, cost=0 + self.heuristic[initial]))
+        self._l.append(Node(value=initial, cost=self.dictDistance.get(initial) + self.heuristic[initial]))
+
+        if initial == goal[0]:
+            self.trace(Node(value=initial))
+            print("The goal is " + initial)
+            return 1
+
+        while not (pq.empty()):
+            currentN = pq.get()
+            visited.append(currentN.value)
+
+            if currentN.value == goal[0]:
+                self.trace(currentN)
+                print("The goal is " + currentN.value)
+                return 1
+
+            for adjNode in self.graph.get(currentN.value) or []:
+                if adjNode.value not in visited:
+                    print("NNNNNNNN", type(adjNode.value))
+                    print("MMMMMMM", self.heuristic[adjNode.value])
+                    print("SSSSSSSS", int(adjNode.cost))
+                    print("TTTTTTTttt", currentN.value)
+                    print("TTTTTTTTTTTTTTT", type(currentN.value))
+                    print("UUUUUUUUU", self.dictDistance.get(currentN.value))
+                    print("LLLLLL", self.dictDistance.get(currentN.value) + int(adjNode.cost) + int(
+                        self.heuristic[adjNode.value]))
+                    # print("IIIIIIIIIIIIIII",self.heuristic[adjNode])
+                    if ((self.dictDistance.get(currentN.value) + int(adjNode.cost) + int(
+                            self.heuristic[adjNode.value]))) < (
+                            self.dictDistance.get(adjNode.value) + int(self.heuristic[adjNode.value])):
+                        print("OOOOOOO")
+                        self.dictDistance[adjNode.value] = self.dictDistance.get(currentN.value) + int(adjNode.cost)
+                        self._l.append(Node(value=adjNode.value,
+                                            cost=self.dictDistance.get(adjNode.value) + self.heuristic[adjNode.value]))
+                        temp = Node(value=adjNode.value, parent=currentN,
+                                    cost=self.dictDistance.get(adjNode.value) + self.heuristic[adjNode.value])
+                        pq.put(temp)
+                        print("The cost of the node ", temp.value, " is ", temp.cost)
+                        print("pq", pq)
+
         self.solution = "GOAL NOT FOUND"
         return 0
 
@@ -344,8 +416,8 @@ class Graph:
                     pos_attrs[node] = (coords[0], coords[1] + 4)
 
                 custom_node_attrs = {}
-                for node in self.heuristicGreedy.keys():
-                    custom_node_attrs[node] = "{'h': '" + str(self.heuristicGreedy[node]) + "'}"
+                for node in self.heuristic.keys():
+                    custom_node_attrs[node] = "{'h': '" + str(self.heuristic[node]) + "'}"
                 nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
                 # Set the title
                 nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)
@@ -365,8 +437,8 @@ class Graph:
                     pos_attrs[node] = (coords[0], coords[1] + 4)
 
                 custom_node_attrs = {}
-                for node in self.heuristicGreedy.keys():
-                    custom_node_attrs[node] = "{'h': '" + str(self.heuristicGreedy[node]) + "'}"
+                for node in self.heuristic.keys():
+                    custom_node_attrs[node] = "{'h': '" + str(self.heuristic[node]) + "'}"
                 nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
                 # Set the title
                 nx.draw_networkx_edge_labels(self._Gr, pos=self._layout, edge_labels=self.labels, ax=a)
@@ -463,7 +535,7 @@ class Graph:
                 self._colors = ['blue'] * self._Gr.number_of_nodes()
 
     def anim(self):
-        fig = plt.Figure(figsize=(5, 4))
+        fig = plt.Figure(figsize=(7, 5))
         ax = fig.add_subplot(111)
         plt.axis('off')
         # nx.draw_networkx(self._Gr, pos=self._layout, ax=ax)
@@ -543,11 +615,11 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
       if (type_var == 3):
           lmtDfs_inst = Graph(formatted_input)
           # bfs_inst.draw_graph()
-          lmtDfs_inst.limited_dfs(inputFirstNode,inputGoal,int(inputDepthLmt))
+          lmtDfs_inst.limited_dfs(inputFirstNode, inputGoal, int(inputDepthLmt))
           lmtDfs_inst.anim()
           lbl_bottom['text'] = lmtDfs_inst.solution
           print(lmtDfs_inst._l)
-      print(input , 'whatever' )
+      print(input, 'whatever')
 
       if (type_var == 4):
           print(input, 'LOOK HEREEEEEEEE')
@@ -555,7 +627,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           # bfs_inst.draw_graph()
           iterDeepening_inst.iterDeeping(inputFirstNode, inputGoal)
           iterDeepening_inst.anim()
-          #lbl_bottom['text'] = iterDeepening_inst.solution
+          # lbl_bottom['text'] = iterDeepening_inst.solution
           print(iterDeepening_inst._l)
       print(input, 'whatever')
 
@@ -565,6 +637,15 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           greedy_inst.anim()
           lbl_bottom['text'] = greedy_inst.solution
       # print(ucs_inst._l)
+
+      if (type_var == 6):
+          print(input, 'LOOK HEREEEEEEEE')
+          aStar_inst = Graph(formatted_input, weighted=True)
+          aStar_inst.aStar(inputFirstNode, inputGoal)
+          aStar_inst.anim()
+          lbl_bottom['text'] = aStar_inst.solution
+          print(aStar_inst._l)
+      print(input, 'whatever')
 
   else:
       tk.messagebox.showinfo("Error", "Check that the initial node is entered in the graph")
@@ -577,56 +658,66 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
 #                                    START OF GUI                                                   #
 ####################################################################################################
 root = Tk()
+root.resizable(FALSE,FALSE)
 root.title("Search Methods Visualizer")
-
+root.config(background="dark cyan")
 frm_right = tk.Frame()
-lbl_nodes = tk.Label(master=frm_right,width=15,height=1, text="Enter the nodes", foreground="#CD5C5C")
+frm_right.config(background="dark cyan")
 # ent = tk.Entry(master=frm_right, fg="#CD5C5C", width=50)
 var1 = tk.StringVar()
-lbl_firstNode = tk.Label(master=frm_right, text="Enter the initial node", width=15, height=1, fg="#CD5C5C")
-txtFirstNode = tk.Text(master=frm_right, height=1, width=3)
-lbl_goalNode = tk.Label(master=frm_right, text="Enter the goal node(s)", width=17, height=1, fg="#CD5C5C")
-txtgoalNode = tk.Text(master=frm_right, height=1, width=10)
-lbl_depthLmt = tk.Label(master=frm_right, text="Enter the depth limit", width=15, height=1, fg="#CD5C5C")
-txtDepthLmt = tk.Text(master=frm_right, height=1, width=3)
-txt = tk.Text(master=frm_right, height=2, width=15)
-btn_Run = tk.Button(master=frm_right, text="Run",command=lambda:onClickRun(txtFirstNode,txtgoalNode,txt ,algorithmChosen.current(),txtDepthLmt) , width=15, height=1, fg="#CD5C5C")
-algorithmChosen = ttk.Combobox(master=frm_right, width = 27, textvariable = var1)
-algorithmChosen['values'] = ('dfs',
-                          'bfs',
-                          'dijkstra',
-                          'lim_dfs',
-                          'itr_dfs',
-                             'Greedy')
+lbl_goalNode = tk.Label(master=frm_right, text="Enter the goal node(s)", height=1, background="dark cyan", font=("Verdana",12,'bold'),fg="white")
+txtgoalNode = tk.Text(master=frm_right, height=2, width=12,font=("Verdana",12),fg="black")
+lbl_depthLmt = tk.Label(master=frm_right, text="Enter the depth limit", height=1, background="dark cyan",font=("Verdana",12,'bold'),fg="white")
+txtDepthLmt = tk.Text(master=frm_right, height=2, width=5,font=("Verdana",12),fg="black")
+btn_Run = tk.Button(master=frm_right, text="   Run   ",command=lambda:onClickRun(txtFirstNode,txtgoalNode,txt,algorithmChosen.current(),txtDepthLmt) ,height=1,background="dark cyan",font=("Verdana",12,'bold'),fg="white")
+algorithmChosen = ttk.Combobox(master=frm_right,textvariable = var1,font=("Verdana",12))
+algorithmChosen['values'] = ('Depth first',
+                          'Breadth first',
+                          'Uniform cost',
+                          'Depth limited',
+                          'Iterative deepening',
+                             'Greedy',
+                             'A*')
 
-lbl_nodes.grid(row=0, column=0, padx=5, pady=5)
-txt.grid(row=1, column=0, padx=5, pady=1)
-lbl_firstNode.grid(row=0, column=1, padx=5, pady=5)
-txtFirstNode.grid(row=1, column=1, padx=5, pady=1)
-lbl_goalNode.grid(row=2, column=1, padx=5, pady=5)
-txtgoalNode.grid(row=3, column=1, padx=5, pady=1)
-lbl_depthLmt.grid(row=4, column=1, padx=5, pady=5)
-txtDepthLmt.grid(row=5, column=1, padx=5, pady=1)
+
+lbl_goalNode.grid(row=0, column=0,pady=0)
+txtgoalNode.grid(row=1, column=0,pady=(5,24))
+lbl_depthLmt.grid(row=2, column=0, padx=5, pady=5)
+txtDepthLmt.grid(row=3, column=0, padx=5, pady=(5,24))
 # ent.grid(row=1, column=0, padx=5, pady=5)
-btn_Run.grid(row=6, column=0, padx=5, pady=5)
-algorithmChosen.grid(row=6, column=1)
+algorithmChosen.grid(row=4, column=0,pady=(5,130))
+btn_Run.grid(row=5, column=0, padx=5, pady=(5,100))
 algorithmChosen.current(1)
 
+frm_middle=tk.Frame()
+frm_middle.config(background="dark cyan")
+lbl_firstNode = tk.Label(master=frm_middle, text="Enter the initial node", height=1, background="dark cyan", font=("Verdana",12,'bold'),fg="white")
+txtFirstNode = tk.Text(master=frm_middle, height=2, width=5,font=("Verdana",12),fg="black")
+lbl_nodes = tk.Label(master=frm_middle,width=15,height=1, text="Enter the nodes", background="dark cyan",font=("Verdana",12,'bold'),fg="white")
+txt = tk.Text(master=frm_middle, height=20, width=18,font=("Verdana",12),fg="black")
+lbl_firstNode.grid(row=0, column=0,pady=0)
+txtFirstNode.grid(row=1, column=0, pady=(5,20))
+lbl_nodes.grid(row=2, column=0, padx=8, pady=8)
+txt.grid(row=3, column=0, pady=1)
+scroll = ttk.Scrollbar(frm_middle)
+scroll.config(command=txt.yview)
+txt.config(yscrollcommand=scroll.set)
+scroll.grid(row=3, column=3,sticky='NS',padx=0)
 
 
 frm_left = tk.Frame()
-lbl_top = tk.Label(master=frm_left, text="Title", foreground="#CD5C5C")
-fig = plt.Figure(figsize=(5, 4))
+frm_left.config(background="dark cyan")
+lbl_top = tk.Label(master=frm_left, text="Graph Visualizer",  background="dark cyan", font=("Verdana",12,'bold'),fg="white")
+lbl_bottom = tk.Label(master=frm_left, text="Written Results", background="dark cyan", font=("Verdana",12,'bold'),fg="white")
+lbl_top.grid(row=0, column=0, padx=5, pady=5)
+lbl_bottom.grid(row=2, column=0, padx=5, pady=(30,30))
+fig = plt.Figure(figsize=(8, 5))
 canvas = FigureCanvasTkAgg(fig, frm_left)
 canvas.draw()
-canvas.get_tk_widget().grid(row=1, column=0)
-lbl_bottom = tk.Label(master=frm_left, text="Written Results", foreground="#CD5C5C")
-lbl_top.grid(row=0, column=0, padx=5, pady=5)
-lbl_bottom.grid(row=2, column=0, padx=5, pady=5)
+canvas.get_tk_widget().grid(row=1, column=0,padx=30)
 
-
-
-frm_right.grid(row=0, column=1, padx=5, pady=5)
+frm_right.grid(row=0, column=2, padx=5, pady=5)
+frm_middle.grid(row=0, column=1, padx=5, pady=5)
 frm_left.grid(row=0, column=0, padx=5, pady=5)
 
 root.mainloop()
