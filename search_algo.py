@@ -56,7 +56,7 @@ class Node:
 #                                        START OF GRAPH                                             #
 ####################################################################################################
 class Graph:
-    def __init__(self, formatted_input, weighted=False, isGreedy=False):
+    def __init__(self, formatted_input, weighted=False, isGreedy=False, isIter=False):
         '''
         self.graph = {'A': ['B', 'D'],
                 'B': ['C'],
@@ -70,6 +70,9 @@ class Graph:
         self.dictDistance = {}
         self.weight = weighted
         self.isGreedy = isGreedy
+        self.isIter = isIter
+        self.index= 0
+        self.varStart = 0
 
         if not weighted:
             for lst in formatted_input:
@@ -115,8 +118,10 @@ class Graph:
             self.nodeLabels = nx.get_node_attributes(self._Gr, 'distance')
 
         self._l = []
+        self._itrL = []
         self.shortestPath = []
         self.solution = ""
+        self.solItr = []
         self.heuristic = {}
         self._colors = ['blue'] * self._Gr.number_of_nodes()
         # self._layout = nx.spring_layout(self._Gr,scale=30, k=1/math.sqrt(self._Gr.order()))
@@ -174,8 +179,11 @@ class Graph:
     def limited_dfs(self, init, goal, depth_limit):
         visited = []
         stack = []
+        self.solution = ""
+        self._l.clear()
         stack.append(Node(value=init))
         self._l.append(init)
+        self._itrL.append(init)
         if init in goal:
             self.trace(Node(value=init))
             print("Initial is goal")
@@ -186,6 +194,7 @@ class Graph:
             visited.append(curr_node.value)
             if curr_node.value not in self._l:
                 self._l.append(curr_node.value)
+                self._itrL.append(curr_node.value)
                 print("visitied ", visited)
             for adj in self.graph.get(curr_node.value) or []:
                 if curr_node.depth + 1 > depth_limit:
@@ -200,7 +209,9 @@ class Graph:
                     for x in goal:
                         if adj == x:
                             self._l.append(x)
+                            self._itrL.append(x)
                             self.trace(temp)
+                            self.solItr.append(self.solution)
                             print()
                             return 1
                     stack.append(temp)
@@ -208,11 +219,13 @@ class Graph:
                 print(node.value, end=" ")
             print()
         if isCutOff:
-            self.solution = "GOAL NODE NOT FOUND WITHIN DEPTH OF" + str(depth_limit)
-            print("GOAL NODE NOT FOUND WITHIN DEPTH OF " + str(depth_limit))
+            self.solution = "GOAL NODE NOT FOUND WITHIN DEPTH OF    " + str(depth_limit)
+            self.solItr.append("GOAL NODE NOT FOUND WITHIN DEPTH OF    " + str(depth_limit))
+            print("GOAL NODE NOT FOUND WITHIN DEPTH OF    " + str(depth_limit))
             return 2  # cutOff
         else:
             self.solution = "GOAL NOT FOUND"
+            self.solItr.append( "GOAL NOT FOUND")
         return 0
 
     def iterDeeping(self, intial, goal):
@@ -222,11 +235,14 @@ class Graph:
             res = self.limited_dfs(intial, goal,depth_limit)
             if res == 1:
                 return 1
+            self._itrL.append("break")
             depth_limit += 1
-            lbl_bottom['text'] = self.solution
+            #lbl_bottom['text'] = self.solution
             print("SALMAAAAAAAA " , self.solution)
+            print("AAAAAAAAAA ", self.solItr)
+            #print("AAAAAAAAAA ", self._l)
         #self.solution = "GOAL NOT FOUND"
-        lbl_bottom['text'] = self.solution
+        #lbl_bottom['text'] = self.solution
         return 0
 
 
@@ -354,7 +370,7 @@ class Graph:
         pq = PriorityQueue()
         visited = []
         self.dictDistance[initial] = 0
-        print("AAAAAAAAA", self.dictDistance[initial])
+       # print("AAAAAAAAA", self.dictDistance[initial])
         pq.put(Node(value=initial, cost=0 + self.heuristic[initial]))
         self._l.append(Node(value=initial, cost=self.dictDistance.get(initial) + self.heuristic[initial]))
 
@@ -448,6 +464,43 @@ class Graph:
             if frames == len(self._l + self.shortestPath) - 1:
                 self._colors = ['blue'] * self._Gr.number_of_nodes()
 
+        elif self.isIter:
+            if frames < len(self._itrL):
+                if self._itrL[frames] == "break":
+                    self.varStart = frames + 1
+                    self._colors = ['blue'] * self._Gr.number_of_nodes()
+                    print("all " ,self.solItr)
+                    print("w index " ,self.solItr[self.index] )
+                    lbl_bottom['text'] = self.solItr[self.index]
+                    self.index += 1
+                else:
+                    i = 0
+                    for node in self._Gr.nodes:
+                        print(node, " ", self._itrL[frames])
+                        if node == self._itrL[frames]:
+                            break
+                        i += 1
+                    self._colors[i] = 'orange'
+
+                nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
+                # Set the title
+                a.set_title("Frame {}".format(frames))
+
+            else:
+                a.clear()
+                i = 0
+                for node in self._Gr.nodes:
+                    print(node, " ", self.shortestPath[frames - len(self._itrL)])
+                    if node == self.shortestPath[frames - len(self._itrL)]:
+                        break
+                    i += 1
+                self._colors[i] = 'red'
+                lbl_bottom['text'] = self.solItr[len(self.solItr)-1]
+                nx.draw_networkx(self._Gr, pos=self._layout, node_color=self._colors, ax=a)
+                a.set_title("Frame {}".format(frames))
+
+            if frames == len(self._itrL + self.shortestPath) - 1:
+                self._colors = ['blue'] * self._Gr.number_of_nodes()
 
 
         elif self.weight:
@@ -543,7 +596,11 @@ class Graph:
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
         print(len(self._l))
-        ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,fargs={ax})
+        if self.isIter:
+            ani = animation.FuncAnimation(fig, self.update, frames=len(self._itrL + self.shortestPath), interval=100,
+                                          fargs={ax})
+        else:
+            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,fargs={ax})
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
@@ -613,22 +670,28 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
          # print(ucs_inst._l)
 
       if (type_var == 3):
-          lmtDfs_inst = Graph(formatted_input)
-          # bfs_inst.draw_graph()
-          lmtDfs_inst.limited_dfs(inputFirstNode, inputGoal, int(inputDepthLmt))
-          lmtDfs_inst.anim()
-          lbl_bottom['text'] = lmtDfs_inst.solution
-          print(lmtDfs_inst._l)
-      print(input, 'whatever')
+          print("KKKKKKKKKKKKKK" , user_depthlmt)
+          if inputDepthLmt == '':
+              tk.messagebox.showinfo("Error", "Please enter the depth limit")
+          else:
+              lmtDfs_inst = Graph(formatted_input)
+              # bfs_inst.draw_graph()
+              lmtDfs_inst.limited_dfs(inputFirstNode, inputGoal, int(inputDepthLmt))
+              lmtDfs_inst.anim()
+              lbl_bottom['text'] = lmtDfs_inst.solution
+              print(lmtDfs_inst._l)
+              print(input, 'whatever')
+
 
       if (type_var == 4):
           print(input, 'LOOK HEREEEEEEEE')
-          iterDeepening_inst = Graph(formatted_input)
+          iterDeepening_inst = Graph(formatted_input,isIter=True)
           # bfs_inst.draw_graph()
           iterDeepening_inst.iterDeeping(inputFirstNode, inputGoal)
           iterDeepening_inst.anim()
           # lbl_bottom['text'] = iterDeepening_inst.solution
-          print(iterDeepening_inst._l)
+         # print(iterDeepening_inst._l)
+          print("AAAAAAAAAA ", iterDeepening_inst._itrL)
       print(input, 'whatever')
 
       if (type_var == 5):
