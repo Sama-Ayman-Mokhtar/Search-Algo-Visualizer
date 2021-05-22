@@ -13,10 +13,8 @@ from collections import defaultdict
 #####################################################################################################
 #                                         N O T E S                                                #
 ####################################################################################################
-#TO_DO : Di_Graph
 #TO_DO : handel error when limited dfs and no depth limit entered ('' parsed to int)
 #TO_DO : add text res to update func (animation) {iterative deepening}
-#TO_DO : implement dijkstra
 '''
 0 1 2 3 4
 1 4 5
@@ -55,9 +53,9 @@ class Node:
    # def __str__(self):
         #return str(self.value)
 #####################################################################################################
-#                                        START OF DFS                                              #
+#                                        START OF GRAPH                                             #
 ####################################################################################################
-class DFS:
+class Graph:
     def __init__(self, formatted_input, weighted=False, isGreedy=False):
         '''
         self.graph = {'A': ['B', 'D'],
@@ -482,7 +480,7 @@ class DFS:
 
 
 #####################################################################################################
-#                                         END OF DFS                                                #
+#                                         END OF GRAPH                                              #
 ####################################################################################################
 
 
@@ -517,7 +515,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
 
   if first == True:
       if(type_var == 0):
-          dfs_inst = DFS(formatted_input)
+          dfs_inst = Graph(formatted_input)
           dfs_inst.dfs(inputFirstNode, inputGoal)
           dfs_inst.anim()
           lbl_bottom['text'] = dfs_inst.solution
@@ -527,7 +525,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           print(dfs_inst._l)
 
       if (type_var == 1):
-          bfs_inst = DFS(formatted_input)
+          bfs_inst = Graph(formatted_input)
           # bfs_inst.draw_graph()
           bfs_inst.bfs(inputFirstNode,inputGoal)
           bfs_inst.anim()
@@ -536,14 +534,14 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
       print(input , 'whatever' )
 
       if (type_var == 2):
-          ucs_inst = DFS(formatted_input,weighted=True)
+          ucs_inst = Graph(formatted_input,weighted=True)
           ucs_inst.uniformCost(inputFirstNode, inputGoal)
           ucs_inst.anim()
           lbl_bottom['text'] = ucs_inst.solution
          # print(ucs_inst._l)
 
       if (type_var == 3):
-          lmtDfs_inst = DFS(formatted_input)
+          lmtDfs_inst = Graph(formatted_input)
           # bfs_inst.draw_graph()
           lmtDfs_inst.limited_dfs(inputFirstNode,inputGoal,int(inputDepthLmt))
           lmtDfs_inst.anim()
@@ -553,7 +551,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
 
       if (type_var == 4):
           print(input, 'LOOK HEREEEEEEEE')
-          iterDeepening_inst = DFS(formatted_input)
+          iterDeepening_inst = Graph(formatted_input)
           # bfs_inst.draw_graph()
           iterDeepening_inst.iterDeeping(inputFirstNode, inputGoal)
           iterDeepening_inst.anim()
@@ -562,7 +560,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
       print(input, 'whatever')
 
       if (type_var == 5):
-          greedy_inst = DFS(formatted_input,weighted= True, isGreedy=True)
+          greedy_inst = Graph(formatted_input,weighted= True, isGreedy=True)
           greedy_inst.greedy(inputFirstNode, inputGoal)
           greedy_inst.anim()
           lbl_bottom['text'] = greedy_inst.solution
