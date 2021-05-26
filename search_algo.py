@@ -26,6 +26,21 @@ from collections import defaultdict
 10 21 22
 11 23 24
 
+0 1 4
+0 7 8
+1 7 11
+1 2 8
+7 8 7
+7 6 1
+2 8 2
+8 6 6
+2 5 4
+6 5 2
+2 3 7
+3 5 14
+3 4 9
+5 4 10
+
 1 2 1
 1 3 1
 2 3 3
@@ -287,6 +302,32 @@ class Graph:
         self.solution = "GOAL NOT FOUND"
         return 0
 
+    def helper(self, initial, goal):
+        pq = PriorityQueue()
+        dis={}
+        for nodes in self._Gr.nodes:
+            dis[nodes]=10E9
+        dis[initial]=0
+        pq.put(Node(value=initial, cost=0))
+
+        if initial == goal:
+            return dis[initial]
+
+        while not (pq.empty()):
+            currentN = pq.get()
+            if currentN.value == goal:
+                return dis[goal]
+
+            for adjNode in self.graph.get(currentN.value) or []:
+                if ((dis.get(currentN.value) + int(adjNode.cost)) < (
+                       dis.get(adjNode.value))):
+                    dis[adjNode.value] = dis.get(currentN.value) + int(adjNode.cost)
+                    temp = Node(value=adjNode.value, parent=currentN, cost=self.dictDistance.get(adjNode.value))
+                    pq.put(temp)
+                    print("pq", pq)
+
+        return 10E9
+
     def greedy(self, initial, goal):
         for node in self._Gr.nodes:
             for x in goal:
@@ -296,12 +337,8 @@ class Graph:
         print("goal[0] is ", goal[0])
 
         for nodeVal in self._Gr.nodes:
-            sum = 0
-            lstPath = nx.shortest_path(self._Gr, nodeVal, goal[0])
-            for x in range(len(lstPath) - 1):
-                sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
-            self.heuristic[nodeVal] = sum
-        print(self.heuristic)
+            self.heuristic[nodeVal] = self.helper(nodeVal,goal[0])
+            print(self.heuristic)
 
         pq = PriorityQueue()
         visited = []
@@ -338,12 +375,9 @@ class Graph:
                     break
         print("goal[0] is ", goal[0])
 
-        for node in self._Gr.nodes:
-            sum = 0
-            lstPath = nx.shortest_path(self._Gr, node, goal[0])
-            for x in range(len(lstPath) - 1):
-                sum = sum + int(self._Gr.get_edge_data(lstPath[x], lstPath[x + 1]).get('weight'))
-            self.heuristic[node] = sum
+        for nodeVal in self._Gr.nodes:
+            self.heuristic[nodeVal] = self.helper(nodeVal, goal[0])
+            print(self.heuristic)
 
         pq = PriorityQueue()
         visited = []
@@ -388,7 +422,6 @@ class Graph:
             if frames < len(self._l):
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self._l[frames])
                     if node == self._l[frames]:
                         break
                     i += 1
@@ -410,7 +443,6 @@ class Graph:
 
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self.shortestPath[frames - len(self._l)])
                     if node == self.shortestPath[frames - len(self._l)]:
                         break
                     i += 1
@@ -443,7 +475,6 @@ class Graph:
                 else:
                     i = 0
                     for node in self._Gr.nodes:
-                        print(node, " ", self._itrL[frames])
                         if node == self._itrL[frames]:
                             break
                         i += 1
@@ -457,7 +488,6 @@ class Graph:
 
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self.shortestPath[frames - len(self._itrL)])
                     if node == self.shortestPath[frames - len(self._itrL)]:
                         break
                     i += 1
@@ -475,7 +505,6 @@ class Graph:
             if frames < len(self._l):
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self._l[frames])
                     if node == self._l[frames].value:
                         break
                     i += 1
@@ -500,7 +529,6 @@ class Graph:
 
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self.shortestPath[frames - len(self._l)])
                     if node == self.shortestPath[frames - len(self._l)]:
                         break
                     i += 1
@@ -528,7 +556,6 @@ class Graph:
             if frames < len(self._l):
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self._l[frames])
                     if node == self._l[frames]:
                         break
                     i += 1
@@ -542,7 +569,6 @@ class Graph:
 
                 i = 0
                 for node in self._Gr.nodes:
-                    print(node, " ", self.shortestPath[frames - len(self._l)])
                     if node == self.shortestPath[frames - len(self._l)]:
                         break
                     i += 1
@@ -567,7 +593,7 @@ class Graph:
             ani = animation.FuncAnimation(fig, self.update, frames=len(self._itrL + self.shortestPath), interval=400,
                                           fargs={ax})
         else:
-            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=400,fargs={ax})
+            ani = animation.FuncAnimation(fig, self.update, frames=len(self._l + self.shortestPath), interval=1000,fargs={ax})
         canvas = FigureCanvasTkAgg(fig, frm_left)
         canvas.draw()
         canvas.get_tk_widget().grid(row=1, column=0)
@@ -592,13 +618,19 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
   first = False
   goal = False
 
-  for item in formatted_input:
-      for list in item:
-          if list == inputFirstNode:
-              first = True
-          for x in inputGoal:
-              if list == x:
-                  goal = True
+  if type_var == 5 or type_var == 6:
+      for item in formatted_input:
+              if item[0]==inputFirstNode or item[1]==inputFirstNode:
+                  first=True
+              for x in inputGoal:
+                  if item[0] == x or item[1] == x:
+                      goal = True
+
+  else:
+      for item in formatted_input:
+          for list in item:
+              if list == inputFirstNode:
+                  first = True
 
   if first == True:
       if(type_var == 0):
@@ -625,7 +657,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
       if (type_var == 3):
           print("Depth limit starting")
           if inputDepthLmt == '':
-              tk.messagebox.showinfo("Error", "Please enter the depth limit")
+              tk.messagebox.showinfo("Error", "Enter the depth limit")
 
           else:
               lmtDfs_inst = Graph(formatted_input)
@@ -639,23 +671,26 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           iterDeepening_inst.iterDeeping(inputFirstNode, inputGoal)
           iterDeepening_inst.anim()
 
-      if goal:
-          if (type_var == 5):
+      if (type_var == 5):
+          if goal == False:
+              tk.messagebox.showinfo("Error", "Check that the goal exists in the graph")
+          else:
               print("Greedy starting")
               greedy_inst = Graph(formatted_input, weighted=True, isGreedy=True)
               greedy_inst.greedy(inputFirstNode, inputGoal)
               greedy_inst.anim()
               lbl_bottom['text'] = greedy_inst.solution
 
-          if (type_var == 6):
+      if (type_var == 6):
+          if goal == False:
+              tk.messagebox.showinfo("Error", "Check that the goal exists in the graph")
+          else:
               print("Astar starting")
               aStar_inst = Graph(formatted_input, weighted=True)
               aStar_inst.aStar(inputFirstNode, inputGoal)
               aStar_inst.anim()
               lbl_bottom['text'] = aStar_inst.solution
 
-      else:
-          tk.messagebox.showinfo("Error", "Check that the goal exists in the graph")
   else:
       tk.messagebox.showinfo("Error", "Check that the initial node is entered in the graph")
 
