@@ -618,7 +618,7 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
   first = False
   goal = False
 
-  if type_var == 5 or type_var == 6:
+  if type_var == 2 or type_var == 5 or type_var == 6:
       for item in formatted_input:
               if item[0]==inputFirstNode or item[1]==inputFirstNode:
                   first=True
@@ -648,11 +648,14 @@ def onClickRun(user_firstNode,user_goal, user_txtBox, type_var,user_depthlmt=0):
           lbl_bottom['text'] = bfs_inst.solution
 
       if (type_var == 2):
-          print("UCS starting")
-          ucs_inst = Graph(formatted_input,weighted=True)
-          ucs_inst.uniformCost(inputFirstNode, inputGoal)
-          ucs_inst.anim()
-          lbl_bottom['text'] = ucs_inst.solution
+          if goal == False:
+              tk.messagebox.showinfo("Error", "Check that the goal exists in the graph")
+          else:
+              print("UCS starting")
+              ucs_inst = Graph(formatted_input, weighted=True)
+              ucs_inst.uniformCost(inputFirstNode, inputGoal)
+              ucs_inst.anim()
+              lbl_bottom['text'] = ucs_inst.solution
 
       if (type_var == 3):
           print("Depth limit starting")
